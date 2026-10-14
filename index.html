@@ -12,18 +12,11 @@
 
   <!-- HOME -->
   <section data-screen="home">
-    <p class="small">Difficulty</p>
-    <div id="difficulty" class="group">
-      <button data-d="easy">Easy</button>
-      <button data-d="normal">Normal</button>
-      <button data-d="hard">Hard</button>
-    </div>
     <div class="modes">
       <div class="mode">
         <h2>Classic</h2>
         <p>Sing as many random notes as you can in <strong>60 seconds</strong>. Fast hits add time; quick streaks build a multiplier.</p>
         <button id="btn-classic">Play</button>
-        <p class="small">Best (<span id="best-label"></span>): <span id="best-start">0</span></p>
       </div>
       <div class="mode">
         <h2>Challenge</h2>
@@ -36,10 +29,26 @@
   </section>
 
   <!-- CLASSIC -->
+  <section data-screen="classic-menu" hidden>
+    <h2>Classic</h2>
+    <p>Sing as many notes as you can in <strong>60 seconds</strong>.<br>
+       Hits under 2 s add +3 s. Quick consecutive hits build a ×multiplier that fades after 4 s.</p>
+    <p class="small">Difficulty</p>
+    <div class="group diff-group" data-mode="classic">
+      <button data-d="easy">Easy</button>
+      <button data-d="normal">Normal</button>
+      <button data-d="hard">Hard</button>
+    </div>
+    <p class="small">Best score: <span id="best-start">0</span></p>
+    <button id="btn-classic-start">Start</button>
+    <button class="secondary btn-home">Back</button>
+    <p class="error" hidden></p>
+  </section>
+
   <section data-screen="classic-game" hidden>
     <div class="hud">
       <div id="time-box">Time <span id="time">60</span></div>
-      <div>Score <span id="score">0</span></div>
+      <div id="score-box">Score <span id="score">0</span></div>
       <div>Streak <span id="streak">0</span></div>
     </div>
     <div class="combo">
@@ -57,7 +66,7 @@
     </div>
     <div id="heard">–</div>
     <button id="btn-skip" class="secondary">Skip note (resets streak)</button>
-    <button class="secondary btn-home">Quit</button>
+    <button id="btn-classic-quit" class="secondary">Quit</button>
   </section>
 
   <section data-screen="classic-end" hidden>
@@ -66,24 +75,38 @@
     <p id="newbest" class="newbest" hidden>🏆 New best!</p>
     <p class="small">Best (<span id="best-end-label"></span>): <span id="best-end">0</span></p>
     <button id="btn-again">Play again</button>
-    <button class="secondary btn-home">Menu</button>
+    <button id="btn-classic-menu" class="secondary">Menu</button>
   </section>
 
   <!-- CHALLENGE MENU -->
   <section data-screen="challenge-menu" hidden>
     <h2>Challenge</h2>
-    <p class="small">Challenge</p>
-    <div id="ch-type" class="group">
-      <button data-v="chord">Chord</button>
-      <button data-v="interval">Interval</button>
-      <button data-v="sequence">Sequence</button>
-      <button data-v="allstar">⭐ All-Star</button>
+    <p class="small">Format</p>
+    <div id="ch-format" class="group">
+      <button data-v="single">Single challenge</button>
+      <button data-v="run">Run (same type)</button>
+      <button data-v="allstar">⭐ All-Star (mixed)</button>
     </div>
-    <p class="small">Run length (number of challenges)</p>
-    <div id="ch-len" class="group">
-      <button data-v="1">Single</button>
-      <button data-v="5">5</button>
-      <button data-v="10">10</button>
+    <div id="row-type">
+      <p class="small">Type</p>
+      <div id="ch-type" class="group">
+        <button data-v="chord">Chord</button>
+        <button data-v="interval">Interval</button>
+        <button data-v="sequence">Sequence</button>
+      </div>
+    </div>
+    <div id="row-len">
+      <p class="small">Number of challenges</p>
+      <div id="ch-len" class="group">
+        <button data-v="5">5</button>
+        <button data-v="10">10</button>
+      </div>
+    </div>
+    <p class="small">Difficulty</p>
+    <div class="group diff-group" data-mode="challenge">
+      <button data-d="easy">Easy</button>
+      <button data-d="normal">Normal</button>
+      <button data-d="hard">Hard</button>
     </div>
     <p class="small">Clef</p>
     <div id="ch-clef" class="group">
@@ -94,7 +117,7 @@
     </div>
     <p class="small">Your range: <strong id="ch-range"></strong>
       <button id="btn-recal" class="link">recalibrate</button></p>
-    <p class="small">Difficulty: <span id="ch-diff"></span> · Best time: <span id="ch-best">—</span></p>
+    <p class="small">Best time: <span id="ch-best">—</span></p>
     <button id="btn-ch-start">Start</button>
     <button class="secondary btn-home">Back</button>
     <p class="error" hidden></p>
@@ -103,9 +126,12 @@
   <section data-screen="calibrate" hidden>
     <h2>Find your range</h2>
     <p id="cal-prompt" class="big"></p>
+    <p class="small">Press the button, then sing (and slide or step) towards your extreme note. The lowest/highest steady note you hit is kept. Press Stop when you're happy with it.</p>
     <div id="cal-heard" class="calheard">–</div>
     <div class="combo-track wide"><div id="cal-bar" class="calbar"></div></div>
+    <p id="cal-cand" class="big"></p>
     <p id="cal-msg" class="small"></p>
+    <button id="btn-cal-rec">Record</button>
     <button id="btn-cal-cancel" class="secondary">Cancel</button>
   </section>
 
@@ -145,7 +171,7 @@
     <p id="ch-skips" class="small"></p>
     <p id="ch-newbest" class="newbest" hidden>🏆 New best time!</p>
     <button id="btn-ch-again">Again</button>
-    <button class="secondary btn-home">Menu</button>
+    <button id="btn-ch-menu" class="secondary">Menu</button>
   </section>
 </main>
 <script src="pitch.js"></script>
@@ -153,6 +179,6 @@
 <script src="theory.js"></script>
 <script src="classic.js"></script>
 <script src="challenge.js"></script>
-<script>refreshHome(); show('home');</script>
+<script>refreshAll(); show('home');</script>
 </body>
 </html>

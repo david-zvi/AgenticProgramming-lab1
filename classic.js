@@ -18,18 +18,12 @@ let holdMs, lastGood, endTime, running, lastFrame, diff;
 const bestKey = d => 'singNoteBest_' + d;
 const getBest = d => +localStorage.getItem(bestKey(d)) || 0;
 
-function refreshHome() {
-  document.querySelectorAll('#difficulty button').forEach(b =>
-    b.classList.toggle('active', b.dataset.d === difficulty));
-  $('best-start').textContent = getBest(difficulty);
-  $('best-label').textContent = DIFFICULTIES[difficulty].label;
-  if (typeof refreshChallengeMenu === 'function') refreshChallengeMenu();
+function refreshClassicMenu() {
+  const d = difficulty.classic;
+  document.querySelectorAll('.diff-group[data-mode="classic"] button').forEach(b =>
+    b.classList.toggle('active', b.dataset.d === d));
+  $('best-start').textContent = getBest(d);
 }
-document.querySelectorAll('#difficulty button').forEach(b => b.onclick = () => {
-  difficulty = b.dataset.d;
-  localStorage.setItem('singNoteDifficulty', difficulty);
-  refreshHome();
-});
 
 function nextNote() {
   let n;
@@ -68,7 +62,7 @@ function floatText(parent, text, cls) {
 async function startClassic() {
   showError('');
   try { await ensureMic(); } catch (e) { showError('Could not access the microphone: ' + e.message); return; }
-  diff = DIFFICULTIES[difficulty];
+  diff = DIFFICULTIES[difficulty.classic];
   score = 0; streak = 0; comboCount = 0; target = -1; lastGood = 0; lastHitTime = 0;
   $('score').textContent = 0; $('streak').textContent = 0;
   $('diff-badge').textContent = diff.label;
@@ -116,7 +110,8 @@ function classicLoop(now) {
     lastHitTime = now;
     const pts = multiplier();
     score += pts; streak++;
-    floatText($('note-card'), '+' + pts, 'popup');
+    floatText($('score-box'), '+' + pts, 'timer-popup score-popup');
+    restartAnim($('score-box'), 'bonus');
     if (now - noteShownAt <= FAST_MS) {
       endTime += FAST_BONUS_S * 1000;
       floatText($('time-box'), `+${FAST_BONUS_S}s`, 'timer-popup');
@@ -136,18 +131,22 @@ function classicLoop(now) {
 function finishClassic() {
   running = false;
   $('final').textContent = score;
-  const isBest = score > getBest(difficulty);
-  if (isBest) localStorage.setItem(bestKey(difficulty), score);
+  const d = difficulty.classic;
+  const isBest = score > getBest(d);
+  if (isBest) localStorage.setItem(bestKey(d), score);
   $('newbest').hidden = !isBest;
-  $('best-end').textContent = getBest(difficulty);
+  $('best-end').textContent = getBest(d);
   $('best-end-label').textContent = diff.label;
-  refreshHome();
+  refreshClassicMenu();
   beep(440, 0.4);
   show('classic-end');
 }
 
-$('btn-classic').onclick = startClassic;
+$('btn-classic').onclick = () => { refreshClassicMenu(); show('classic-menu'); };
+$('btn-classic-start').onclick = startClassic;
 $('btn-again').onclick = startClassic;
+$('btn-classic-quit').onclick = () => { running = false; refreshClassicMenu(); show('classic-menu'); };
+$('btn-classic-menu').onclick = () => { refreshClassicMenu(); show('classic-menu'); };
 $('btn-skip').onclick = () => {
   if (!running) return;
   streak = 0; comboCount = 0;

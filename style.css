@@ -75,7 +75,7 @@ button.link { background: none; color: #937aff; font-size: .85rem; padding: 0 .3
 #staff { width: 100%; background: #f6f1e4; border-radius: 12px; }
 .staffline, .ledger { stroke: #333; stroke-width: 1.5; }
 .clef { fill: #222; font-family: "Noto Music", "Bravura Text", "Segoe UI Symbol", "Apple Symbols", "Symbola", serif; }
-.head { fill: #f6f1e4; stroke: #222; stroke-width: 3; }
+.head { fill: none; stroke: #222; stroke-width: 3; }
 .head.cur { stroke: #e08a00; }
 .head.done { fill: #2fbf4f; stroke: #2fbf4f; }
 .acc { fill: #222; font-family: "Noto Music", "Segoe UI Symbol", "DejaVu Sans", sans-serif; }
@@ -87,3 +87,6 @@ button.link { background: none; color: #937aff; font-size: .85rem; padding: 0 .3
   left: 50%; transform: translateX(-50%); opacity: 0; transition: left .05s linear, opacity .1s; }
 .heard { height: 1.6rem; opacity: .8; margin-bottom: 1rem; }
 .calheard { font-size: 3rem; font-weight: 800; margin: 1rem 0; }
+
+#score-box.bonus { animation: tbonus .6s; }
+.score-popup { color: #ffd60a; }

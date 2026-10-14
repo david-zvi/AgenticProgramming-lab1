@@ -17,8 +17,19 @@ const DIFFICULTIES = {
   normal: { tolerance: 30, hold: 400, label: 'Normal' },
   hard:   { tolerance: 15, hold: 500, label: 'Hard' },
 };
-let difficulty = localStorage.getItem('singNoteDifficulty') || 'normal';
-if (!DIFFICULTIES[difficulty]) difficulty = 'normal';
+// Difficulty is chosen separately for each mode.
+const difficulty = {};
+for (const mode of ['classic', 'challenge']) {
+  const saved = localStorage.getItem('singNoteDifficulty_' + mode) || localStorage.getItem('singNoteDifficulty');
+  difficulty[mode] = DIFFICULTIES[saved] ? saved : 'normal';
+}
+document.querySelectorAll('.diff-group').forEach(g => {
+  g.querySelectorAll('button').forEach(b => b.onclick = () => {
+    difficulty[g.dataset.mode] = b.dataset.d;
+    localStorage.setItem('singNoteDifficulty_' + g.dataset.mode, b.dataset.d);
+    refreshAll();
+  });
+});
 
 const Mic = { ctx: null, analyser: null, buf: null, stream: null };
 
