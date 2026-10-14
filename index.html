@@ -10,28 +10,43 @@
 <main>
   <h1>🎤 Sing the Note!</h1>
 
-  <section id="screen-start" class="screen">
-    <p>A note will appear. Sing it (in any octave) and hold it steady.<br>
-       Hit as many notes as you can in <strong>60 seconds</strong>.</p>
-    <div id="difficulty">
+  <!-- HOME -->
+  <section data-screen="home">
+    <p class="small">Difficulty</p>
+    <div id="difficulty" class="group">
       <button data-d="easy">Easy</button>
       <button data-d="normal">Normal</button>
       <button data-d="hard">Hard</button>
     </div>
-    <button id="btn-start">Start</button>
-    <p id="error" class="error" hidden></p>
+    <div class="modes">
+      <div class="mode">
+        <h2>Classic</h2>
+        <p>Sing as many random notes as you can in <strong>60 seconds</strong>. Fast hits add time; quick streaks build a multiplier.</p>
+        <button id="btn-classic">Play</button>
+        <p class="small">Best (<span id="best-label"></span>): <span id="best-start">0</span></p>
+      </div>
+      <div class="mode">
+        <h2>Challenge</h2>
+        <p>Read chords, intervals and melodies on a staff and sing them in your own range.</p>
+        <button id="btn-challenge">Choose</button>
+      </div>
+    </div>
+    <p class="error" hidden></p>
     <p class="small">Needs microphone access. Audio never leaves your browser.</p>
-    <p class="small">Best (<span id="best-label"></span>): <span id="best-start">0</span></p>
-    <p class="small">Fast hits (under 2 s) add +3 s. Quick consecutive hits build a ×multiplier that fades after 4 s.</p>
   </section>
 
-  <section id="screen-game" class="screen" hidden>
+  <!-- CLASSIC -->
+  <section data-screen="classic-game" hidden>
     <div class="hud">
-      <div>Time <span id="time">60</span></div>
+      <div id="time-box">Time <span id="time">60</span></div>
       <div>Score <span id="score">0</span></div>
       <div>Streak <span id="streak">0</span></div>
     </div>
-    <div class="combo"><span id="mult">×1</span><div class="combo-track"><div id="combo-bar"></div></div><span id="diff-badge" class="small"></span></div>
+    <div class="combo">
+      <span id="mult">×1</span>
+      <div class="combo-track"><div id="combo-bar"></div></div>
+      <span id="diff-badge" class="small"></span>
+    </div>
     <div id="note-card">
       <div id="target">C</div>
       <svg id="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/></svg>
@@ -42,17 +57,102 @@
     </div>
     <div id="heard">–</div>
     <button id="btn-skip" class="secondary">Skip note (resets streak)</button>
+    <button class="secondary btn-home">Quit</button>
   </section>
 
-  <section id="screen-end" class="screen" hidden>
+  <section data-screen="classic-end" hidden>
     <h2>Time's up!</h2>
     <p class="final">Final score: <span id="final">0</span></p>
     <p id="newbest" class="newbest" hidden>🏆 New best!</p>
     <p class="small">Best (<span id="best-end-label"></span>): <span id="best-end">0</span></p>
     <button id="btn-again">Play again</button>
+    <button class="secondary btn-home">Menu</button>
+  </section>
+
+  <!-- CHALLENGE MENU -->
+  <section data-screen="challenge-menu" hidden>
+    <h2>Challenge</h2>
+    <p class="small">Challenge</p>
+    <div id="ch-type" class="group">
+      <button data-v="chord">Chord</button>
+      <button data-v="interval">Interval</button>
+      <button data-v="sequence">Sequence</button>
+      <button data-v="allstar">⭐ All-Star</button>
+    </div>
+    <p class="small">Run length (number of challenges)</p>
+    <div id="ch-len" class="group">
+      <button data-v="1">Single</button>
+      <button data-v="5">5</button>
+      <button data-v="10">10</button>
+    </div>
+    <p class="small">Clef</p>
+    <div id="ch-clef" class="group">
+      <button data-v="treble">Treble</button>
+      <button data-v="bass">Bass</button>
+      <button data-v="alto">Alto</button>
+      <button data-v="tenor">Tenor</button>
+    </div>
+    <p class="small">Your range: <strong id="ch-range"></strong>
+      <button id="btn-recal" class="link">recalibrate</button></p>
+    <p class="small">Difficulty: <span id="ch-diff"></span> · Best time: <span id="ch-best">—</span></p>
+    <button id="btn-ch-start">Start</button>
+    <button class="secondary btn-home">Back</button>
+    <p class="error" hidden></p>
+  </section>
+
+  <section data-screen="calibrate" hidden>
+    <h2>Find your range</h2>
+    <p id="cal-prompt" class="big"></p>
+    <div id="cal-heard" class="calheard">–</div>
+    <div class="combo-track wide"><div id="cal-bar" class="calbar"></div></div>
+    <p id="cal-msg" class="small"></p>
+    <button id="btn-cal-cancel" class="secondary">Cancel</button>
+  </section>
+
+  <section data-screen="clef-pick" hidden>
+    <h2>Choose your clef</h2>
+    <p>Notes are written on a staff. Which clef do you read best? You can change this later.</p>
+    <div id="clef-pick" class="group">
+      <button data-v="treble">Treble</button>
+      <button data-v="bass">Bass</button>
+      <button data-v="alto">Alto</button>
+      <button data-v="tenor">Tenor</button>
+    </div>
+  </section>
+
+  <!-- CHALLENGE GAME -->
+  <section data-screen="challenge-game" hidden>
+    <div class="hud">
+      <div>Challenge <span id="ch-progress">1 / 5</span></div>
+      <div>Time <span id="ch-time">0.0</span></div>
+    </div>
+    <p id="ch-title" class="big"></p>
+    <svg id="staff" viewBox="0 0 600 240"></svg>
+    <p id="ch-instr" class="small"></p>
+    <div id="meter">
+      <div id="meter-center"></div>
+      <div id="ch-needle" class="needle"></div>
+    </div>
+    <div class="combo-track wide"><div id="ch-hold" class="holdbar"></div></div>
+    <div id="ch-heard" class="heard">–</div>
+    <button id="btn-ch-skip" class="secondary">Skip (+10 s)</button>
+    <button id="btn-ch-quit" class="secondary">Quit</button>
+  </section>
+
+  <section data-screen="challenge-end" hidden>
+    <h2>Run complete!</h2>
+    <p class="final">Time: <span id="ch-final"></span></p>
+    <p id="ch-skips" class="small"></p>
+    <p id="ch-newbest" class="newbest" hidden>🏆 New best time!</p>
+    <button id="btn-ch-again">Again</button>
+    <button class="secondary btn-home">Menu</button>
   </section>
 </main>
 <script src="pitch.js"></script>
-<script src="game.js"></script>
+<script src="common.js"></script>
+<script src="theory.js"></script>
+<script src="classic.js"></script>
+<script src="challenge.js"></script>
+<script>refreshHome(); show('home');</script>
 </body>
 </html>
