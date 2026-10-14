@@ -1,8 +1,20 @@
-const NOTES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+// Every pitch class with all its valid spellings (no Cb, E#, Fb, B#).
+const SPELLINGS = [
+  ['C'], ['C♯', 'D♭'], ['D'], ['D♯', 'E♭'], ['E'], ['F'],
+  ['F♯', 'G♭'], ['G'], ['G♯', 'A♭'], ['A'], ['A♯', 'B♭'], ['B']
+];
+const DIFFICULTIES = {
+  easy:   { tolerance: 45, hold: 300, label: 'Easy' },
+  normal: { tolerance: 30, hold: 400, label: 'Normal' },
+  hard:   { tolerance: 15, hold: 500, label: 'Hard' },
+};
 const GAME_SECONDS = 60;
-const TOLERANCE_CENTS = 30;   // how close to the note (any octave) counts
-const HOLD_MS = 400;          // must be held steady this long
 const GRACE_MS = 150;         // brief dropouts don't reset the hold
+const FAST_MS = 2000;         // hit within this long of the note appearing = fast
+const FAST_BONUS_S = 3;       // seconds added for a fast hit
+const COMBO_WINDOW_MS = 4000; // combo fades if no hit within this time
+const COMBO_STEP = 2;         // hits per multiplier level
+const MAX_MULT = 5;
 const RING_LEN = 289;
 
 const $ = id => document.getElementById(id);
@@ -10,17 +22,33 @@ const screens = { start: $('screen-start'), game: $('screen-game'), end: $('scre
 function show(name) { for (const k in screens) screens[k].hidden = k !== name; }
 
 let audioCtx, analyser, stream, buf;
-let score, streak, target, holdMs, lastGood, endTime, running, lastFrame;
-let best = +localStorage.getItem('singNoteBest') || 0;
-$('best-start').textContent = best;
+let score, streak, comboCount, lastHitTime, target, targetName, noteShownAt;
+let holdMs, lastGood, endTime, running, lastFrame, diff;
+let difficulty = localStorage.getItem('singNoteDifficulty') || 'normal';
+if (!DIFFICULTIES[difficulty]) difficulty = 'normal';
 
-// Returns {pc, cents} of the nearest semitone for a frequency (A4 = 440 Hz).
+const bestKey = d => 'singNoteBest_' + d;
+const getBest = d => +localStorage.getItem(bestKey(d)) || 0;
+
+function refreshStart() {
+  document.querySelectorAll('#difficulty button').forEach(b =>
+    b.classList.toggle('active', b.dataset.d === difficulty));
+  $('best-start').textContent = getBest(difficulty);
+  $('best-label').textContent = DIFFICULTIES[difficulty].label;
+}
+document.querySelectorAll('#difficulty button').forEach(b => b.onclick = () => {
+  difficulty = b.dataset.d;
+  localStorage.setItem('singNoteDifficulty', difficulty);
+  refreshStart();
+});
+refreshStart();
+
+// Nearest semitone for a frequency (A4 = 440 Hz). pc 0 = C.
 function freqToNote(f) {
   const midi = 69 + 12 * Math.log2(f / 440);
   const r = Math.round(midi);
-  return { pc: ((r % 12) + 12) % 12, cents: (midi - r) * 100, midi: r };
+  return { pc: ((r % 12) + 12) % 12, cents: (midi - r) * 100 };
 }
-// Pitch class index: MIDI 60 is C, so pc 0 = C.
 
 function beep(freq, dur = 0.15) {
   const o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -35,13 +63,34 @@ function nextNote() {
   let n;
   do { n = Math.floor(Math.random() * 12); } while (n === target);
   target = n;
-  $('target').textContent = NOTES[n];
+  const names = SPELLINGS[n];
+  targetName = names[Math.floor(Math.random() * names.length)];
+  $('target').textContent = targetName;
   holdMs = 0;
+  noteShownAt = performance.now();
   setRing(0);
 }
 
 function setRing(frac) {
   $('ring').firstElementChild.style.strokeDashoffset = RING_LEN * (1 - frac);
+}
+
+function multiplier() { return Math.min(MAX_MULT, 1 + Math.floor(comboCount / COMBO_STEP)); }
+
+function updateCombo(now) {
+  const age = now - lastHitTime;
+  if (comboCount > 0 && age > COMBO_WINDOW_MS) comboCount = 0;
+  const frac = comboCount > 0 ? 1 - age / COMBO_WINDOW_MS : 0;
+  $('combo-bar').style.width = (frac * 100) + '%';
+  $('mult').textContent = '×' + multiplier();
+  $('mult').classList.toggle('on', multiplier() > 1);
+}
+
+function popup(text) {
+  const el = document.createElement('div');
+  el.className = 'popup'; el.textContent = text;
+  $('note-card').appendChild(el);
+  setTimeout(() => el.remove(), 900);
 }
 
 async function start() {
@@ -64,8 +113,10 @@ async function start() {
     $('error').hidden = false;
     return;
   }
-  score = 0; streak = 0; target = -1; lastGood = 0;
+  diff = DIFFICULTIES[difficulty];
+  score = 0; streak = 0; comboCount = 0; target = -1; lastGood = 0; lastHitTime = 0;
   $('score').textContent = 0; $('streak').textContent = 0;
+  $('diff-badge').textContent = diff.label;
   nextNote();
   endTime = performance.now() + GAME_SECONDS * 1000;
   running = true; lastFrame = performance.now();
@@ -79,6 +130,7 @@ function loop(now) {
   const left = endTime - now;
   if (left <= 0) return finish();
   $('time').textContent = Math.ceil(left / 1000);
+  updateCombo(now);
 
   analyser.getFloatTimeDomainData(buf);
   const { freq } = detectPitch(buf, audioCtx.sampleRate);
@@ -86,13 +138,14 @@ function loop(now) {
   let onTarget = false;
   if (freq > 0) {
     const { pc, cents } = freqToNote(freq);
-    $('heard').textContent = `${NOTES[pc]}  (${cents >= 0 ? '+' : ''}${Math.round(cents)}¢)`;
-    // Needle shows cents distance from the *target* pitch class, wrapped to ±600.
+    const name = pc === target ? targetName : SPELLINGS[pc][0];
+    $('heard').textContent = `${name}  (${cents >= 0 ? '+' : ''}${Math.round(cents)}¢)`;
+    // Needle: distance from the target pitch class, wrapped to ±600 cents.
     let d = (pc - target) * 100 + cents;
     d = ((d + 600) % 1200 + 1200) % 1200 - 600;
     needle.style.opacity = 1;
     needle.style.left = (50 + Math.max(-100, Math.min(100, d)) / 100 * 45) + '%';
-    onTarget = Math.abs(d) <= TOLERANCE_CENTS;
+    onTarget = Math.abs(d) <= diff.tolerance;
   } else {
     needle.style.opacity = 0;
     $('heard').textContent = '–';
@@ -100,10 +153,20 @@ function loop(now) {
 
   if (onTarget) { lastGood = now; holdMs += dt; }
   else if (now - lastGood > GRACE_MS) holdMs = 0;
-  setRing(Math.min(1, holdMs / HOLD_MS));
+  setRing(Math.min(1, holdMs / diff.hold));
 
-  if (holdMs >= HOLD_MS) {
-    score++; streak++;
+  if (holdMs >= diff.hold) {
+    // Combo continues if this hit lands inside the fade window.
+    comboCount = (comboCount > 0 && now - lastHitTime <= COMBO_WINDOW_MS) ? comboCount + 1 : 1;
+    lastHitTime = now;
+    const pts = multiplier();
+    score += pts; streak++;
+    let msg = '+' + pts;
+    if (now - noteShownAt <= FAST_MS) {
+      endTime += FAST_BONUS_S * 1000;
+      msg += `  ⚡+${FAST_BONUS_S}s`;
+    }
+    popup(msg);
     $('score').textContent = score; $('streak').textContent = streak;
     beep(660); setTimeout(() => beep(880), 80);
     const card = $('note-card');
@@ -116,15 +179,21 @@ function loop(now) {
 function finish() {
   running = false;
   $('final').textContent = score;
-  const isBest = score > best;
-  if (isBest) { best = score; localStorage.setItem('singNoteBest', best); }
+  const isBest = score > getBest(difficulty);
+  if (isBest) localStorage.setItem(bestKey(difficulty), score);
   $('newbest').hidden = !isBest;
-  $('best-end').textContent = best;
-  $('best-start').textContent = best;
+  $('best-end').textContent = getBest(difficulty);
+  $('best-end-label').textContent = diff.label;
+  refreshStart();
   beep(440, 0.4);
   show('end');
 }
 
 $('btn-start').onclick = start;
-$('btn-again').onclick = start;
-$('btn-skip').onclick = () => { if (running) { streak = 0; $('streak').textContent = 0; nextNote(); } };
+$('btn-again').onclick = () => show('start');
+$('btn-skip').onclick = () => {
+  if (!running) return;
+  streak = 0; comboCount = 0;
+  $('streak').textContent = 0;
+  nextNote();
+};

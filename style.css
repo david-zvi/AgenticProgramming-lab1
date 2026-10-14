@@ -40,3 +40,19 @@ button.secondary { background: #3b3856; font-size: .9rem; padding: .5rem 1.2rem;
 .final { font-size: 2rem; }
 .newbest { font-size: 1.3rem; color: #ffd60a; }
 [hidden] { display: none !important; }
+
+#difficulty { display: flex; gap: .5rem; justify-content: center; margin: 1rem 0; }
+#difficulty button { background: #3b3856; font-size: 1rem; padding: .4rem 1.1rem; }
+#difficulty button.active { background: #7c5cff; }
+.combo { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; }
+.combo-track { flex: 1; height: 8px; border-radius: 4px; background: #2a2742; overflow: hidden; }
+#combo-bar { height: 100%; width: 0; background: #ff9f0a; }
+#mult { font-weight: 800; font-size: 1.3rem; opacity: .5; min-width: 2.5rem; }
+#mult.on { opacity: 1; color: #ff9f0a; }
+.popup {
+  position: absolute; left: 50%; top: 10%; transform: translateX(-50%); white-space: nowrap;
+  font-weight: 800; font-size: 1.4rem; color: #ffd60a; pointer-events: none;
+  animation: floatup .9s forwards;
+}
+@keyframes floatup { to { top: -15%; opacity: 0; } }
+#target { font-size: 5rem; }
